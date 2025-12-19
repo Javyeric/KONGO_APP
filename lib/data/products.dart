@@ -10,9 +10,7 @@ final List<Product> products = [
   Product(name: "Lemonade", category: "Soft Drink", type: "Soda", size: "500ml", price: 60, image: 'assets/images/lemonade.jpeg'),
   Product(name: "Monster", category: "Soft Drink", type: "Energy Drink", size: "500ml", price: 300, image: 'assets/images/Monster.png'),
   Product(name: "Delmonte", category: "Soft Drink", type: "Juice", size: "500ml", price: 350, image: 'assets/images/Delmonte.jpeg'),
-  Product(name: "Lemo 500ml", category: "Soft Drink", type: "Soda", size: "500ml", price: 80),
-  Product(name: "Bazuu 265", category: "Soft Drink", type: "Soda", size: "265ml", price: 60, image: 'assets/images/bazuu265.jpeg'),
-  Product(name: "Bazuu 500", category: "Soft Drink", type: "Soda", size: "500ml", price: 80, image: 'assets/images/bazuu500.jpeg'),
+  Product(name: "Lime cordiol", category: "Soft Drink", type: "Soda", size: "500ml", price: 250, image: 'assets/images/lemo500.jpg'),
 
   //liquor - Spirit
   Product(name: "KC 750ml", category: "Liquor", type: "Spirit", size: "750ml", price: 1100 , image: 'assets/images/kc750.jpeg'),
@@ -29,14 +27,12 @@ final List<Product> products = [
   Product(name: "Konyagi 350ml", category: "Liquor", type: "Spirit", size: "350ml", price: 700, image: 'assets/images/Konyagi350ml.jpeg'),
   Product(name: "Konyagi 250ml", category: "Liquor", type: "Spirit", size: "250ml", price: 350, image: 'assets/images/Konyagi250ml.jpeg'),
   Product(name: "Kienyeji 250ml", category: "Liquor", type: "Spirit", size: "250ml", price: 300, image: 'assets/images/Kienyeji250ml.jpeg'),
-  Product(name: "Naps", category: "Liquor", type: "Spirit", size: "250ml", price: 300),
+  Product(name: "Naps", category: "Liquor", type: "Spirit", size: "250ml", price: 300, image: 'assets/images/Naps250ml.jpg'),
   Product(name: "Kane Extra", category: "Liquor", type: "Spirit", size: "250ml", price: 300, image: 'assets/images/KaneExtra.jpeg'),
   Product(name: "Blue Ice", category: "Liquor", type: "Spirit", size: "250ml", price: 200, image: 'assets/images/BlueIce.jpeg'),
   Product(name: "Origin", category: "Liquor", type: "Spirit", size: "250ml", price: 300, image: 'assets/images/Orijin.jpeg'),
   Product(name: "GM General Meakins", category: "Liquor", type: "Spirit", size: "250ml", price: 300, image: 'assets/images/GMGeneralMeakins.jpeg'),
   Product(name: "Sweet Berry", category: "Liquor", type: "Spirit", size: "250ml", price: 120, image: 'assets/images/SweetBerry.jpeg'),
-  Product(name: "KK", category: "Liquor", type: "Spirit", size: "250ml", price:300),
-  Product(name: "Berry orogi", category: "Liquor", type: "Spirit", size: "250ml", price: 160),
 
 
     // Liquor - Whiskey
@@ -118,7 +114,7 @@ final List<Product> products = [
   Product(name: "cider can", category: "Liquor", type: "Beer", size: "500ml", price: 300, image: 'assets/images/cidercan.jpeg'),
   Product(name: "Faxe can", category: "Liquor", type: "Beer", size: "500ml", price: 320, image: 'assets/images/faxecan.jpeg'),
   Product(name: "Balozi can", category: "Liquor", type: "Beer", size: "500ml", price: 270, image: 'assets/images/balozican.jpeg'),
-  Product(name: "GK can", category: "Liquor", type: "Beer", size: "500ml", price: 300),
+  Product(name: "Guiness can", category: "Liquor", type: "Beer", size: "500ml", price: 300, image: 'assets/images/guinesscan.jpg'),
   Product(name: "caprice can", category: "Liquor", type: "Beer", size: "500ml", price: 1100, image: 'assets/images/caprice.jpeg'),
   Product(name: "T Malt can", category: "Liquor", type: "Beer", size: "500ml", price: 350, image: 'assets/images/tmaltcan.jpeg'),
   Product(name: "Heineken can", category: "Liquor", type: "Beer", size: "500ml", price: 350, image: 'assets/images/heinekencan.jpeg'),
@@ -128,14 +124,13 @@ final List<Product> products = [
   Product(name: "Balozi bottle", category: "Liquor", type: "Beer", size: "500ml", price: 240, image: 'assets/images/balozi.jpeg'),
   Product(name: "White Cap bottle", category: "Liquor", type: "Beer", size: "500ml", price: 280, image: 'assets/images/whitecapB.jpeg'),
   Product(name: "Pilsner bottle", category: "Liquor", type: "Beer", size: "500ml", price: 240, image: 'assets/images/pilsner.jpeg'),
-  Product(name: "GK bottle", category: "Liquor", type: "Beer", size: "500ml", price: 280),
+  Product(name: "Guiness bottle", category: "Liquor", type: "Beer", size: "500ml", price: 280, image: 'assets/images/guinessB.jpg'),
   Product(name: "Lager bottle", category: "Liquor", type: "Beer", size: "500ml", price: 240, image: 'assets/images/lagerB.jpeg'),
   Product(name: "Cider bottle", category: "Liquor", type: "Beer", size: "500ml", price: 300, image: 'assets/images/ciderB.jpeg'),
   Product(name: "KO bottle", category: "Liquor", type: "Beer", size: "500ml", price: 300, image: 'assets/images/ko500.jpeg'),
   Product(name: "Guarana", category: "Liquor", type: "Beer", size: "500ml", price: 250, image: 'assets/images/guaranaB.jpeg'),
   Product(name: "Hunters dry", category: "Liquor", type: "Beer", size: "500ml", price: 280, image: 'assets/images/huntersB.jpeg'),
-  Product(name: "UB", category: "Liquor", type: "Beer", size: "500ml", price: 150),
-  Product(name: "KO", category: "Liquor", type: "Beer", size: "500ml", price: 300),
+  Product(name: "KO", category: "Liquor", type: "Beer", size: "500ml", price: 300, image: 'assets/images/ko500.jpeg'),
   
   
 

@@ -15,7 +15,7 @@ class POSHomePageState extends State<POSHomePage> {
   String selectedType = 'All';
   Map<Product, int> cart = {};
   String searchQuery = '';
-  bool showCart = true; // toggle state
+  bool showCart = true;
 
   List<Product> get filteredProducts {
     return allProducts.where((product) {
@@ -176,10 +176,11 @@ class POSHomePageState extends State<POSHomePage> {
             ),
           ),
 
-          // Cart
+          // Scrollable Cart
           if (showCart)
             Container(
               color: Colors.grey[200],
+              height: 300,
               padding: EdgeInsets.all(8),
               child: Column(
                 children: [
@@ -187,30 +188,34 @@ class POSHomePageState extends State<POSHomePage> {
                     'Cart',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  ...cart.entries.map((entry) {
-                    final product = entry.key;
-                    final quantity = entry.value;
-                    return ListTile(
-                      title: Text('${product.name} (${product.size})'),
-                      subtitle: Text(
-                        'KES ${(product.price * quantity).toStringAsFixed(2)}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.remove),
-                            onPressed: () => removeFromCart(product),
+                  Expanded(
+                    child: ListView(
+                      children: cart.entries.map((entry) {
+                        final product = entry.key;
+                        final quantity = entry.value;
+                        return ListTile(
+                          title: Text('${product.name} (${product.size})'),
+                          subtitle: Text(
+                            'KES ${(product.price * quantity).toStringAsFixed(2)}',
                           ),
-                          Text(quantity.toString()),
-                          IconButton(
-                            icon: Icon(Icons.add),
-                            onPressed: () => addToCart(product),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.remove),
+                                onPressed: () => removeFromCart(product),
+                              ),
+                              Text(quantity.toString()),
+                              IconButton(
+                                icon: Icon(Icons.add),
+                                onPressed: () => addToCart(product),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                   Divider(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
