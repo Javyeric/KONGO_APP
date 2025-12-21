@@ -1,23 +1,27 @@
+// ignore_for_file: library_private_types_in_public_api
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:kongo/data/products.dart';
 import 'package:kongo/utils/receipt_generator.dart';
-import 'models/product.dart';
+import 'package:kongo/models/product.dart';
+import 'package:kongo/screens/add_product_screen.dart';
 
 class POSHomePage extends StatefulWidget {
+  const POSHomePage({super.key});
+
   @override
-  POSHomePageState createState() => POSHomePageState();
+  _POSHomePageState createState() => _POSHomePageState();
 }
 
-class POSHomePageState extends State<POSHomePage> {
-  final List<Product> allProducts = products;
+class _POSHomePageState extends State<POSHomePage> {
   String selectedCategory = 'All';
   String selectedType = 'All';
   Map<Product, int> cart = {};
   String searchQuery = '';
   bool showCart = true;
 
-  List<Product> get filteredProducts {
+  List<Product> filteredProducts(List<Product> allProducts) {
     return allProducts.where((product) {
       final matchesCategory = selectedCategory == 'All' || product.category == selectedCategory;
       final matchesType = selectedType == 'All' || product.type == selectedType;
@@ -51,7 +55,7 @@ class POSHomePageState extends State<POSHomePage> {
   double get total {
     return cart.entries
         .map((entry) => entry.key.price * entry.value)
-        .fold(0.0, (sum, element) => sum + element);
+        .fold(0.0, (previousSum, element) => previousSum + element);
   }
 
   void checkout() async {
@@ -64,6 +68,7 @@ class POSHomePageState extends State<POSHomePage> {
       date: formattedDate,
     );
 
+    if (!mounted) return;
     setState(() {
       cart.clear();
     });
@@ -73,12 +78,12 @@ class POSHomePageState extends State<POSHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('POS Home'),
+        title: const Text('POS Home'),
         actions: [
-          IconButton(icon: Icon(Icons.receipt_long), onPressed: checkout),
+          IconButton(icon: const Icon(Icons.receipt_long), onPressed: checkout),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(48),
+          preferredSize: const Size.fromHeight(48),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -89,9 +94,9 @@ class POSHomePageState extends State<POSHomePage> {
               },
               decoration: InputDecoration(
                 hintText: 'Search products...',
-                prefixIcon: Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                 filled: true,
                 fillColor: Colors.white,
               ),
@@ -99,9 +104,18 @@ class POSHomePageState extends State<POSHomePage> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddProductScreen()),
+          );
+        },
+        tooltip: 'Add Product',
+        child: const Icon(Icons.add),
+      ),
       body: Column(
         children: [
-          // Category filter
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -113,12 +127,10 @@ class POSHomePageState extends State<POSHomePage> {
               ],
             ),
           ),
-
-          // Liquor sub-type buttons
           if (selectedCategory == 'Liquor')
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
                   liquorTypeChip('All'),
@@ -130,41 +142,74 @@ class POSHomePageState extends State<POSHomePage> {
                 ],
               ),
             ),
-
-          // Product grid
           Expanded(
-            child: GridView.builder(
-              padding: EdgeInsets.all(8),
-              itemCount: filteredProducts.length,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75,
-              ),
-              itemBuilder: (context, index) {
-                final product = filteredProducts[index];
-                return Card(
-                  elevation: 4,
-                  child: InkWell(
-                    onTap: () => addToCart(product),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        if (product.image != null)
-                          Image.asset(product.image!, height: 80),
-                        Text(product.name),
-                        Text('${product.size}'),
-                        Text('KES ${product.price.toStringAsFixed(0)}'),
-                      ],
-                    ),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('products').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No products found. Add some in Firestore!'));
+                }
+
+                final allProducts = snapshot.data!.docs.map((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return Product.fromJson(data);
+                }).toList();
+
+                final filtered = filteredProducts(allProducts);
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: filtered.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
                   ),
+                  itemBuilder: (context, index) {
+                    final product = filtered[index];
+                    return Card(
+                      elevation: 4,
+                      child: InkWell(
+                        onTap: () => addToCart(product),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (product.image != null)
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  product.image!,
+                                  height: 80,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.broken_image, size: 80),
+                                ),
+                              )
+                            else
+                              const Icon(Icons.image_not_supported, size: 80),
+                            const SizedBox(height: 8),
+                            Text(product.name, textAlign: TextAlign.center),
+                            Text(product.size),
+                            Text('KES ${product.price.toStringAsFixed(0)}'),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),
           ),
-
-          // Toggle Cart View Button
           Container(
-            padding: EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 4),
             child: TextButton.icon(
               onPressed: () {
                 setState(() {
@@ -175,16 +220,14 @@ class POSHomePageState extends State<POSHomePage> {
               label: Text(showCart ? 'Minimize Cart' : 'Expand Cart'),
             ),
           ),
-
-          // Scrollable Cart
           if (showCart)
             Container(
               color: Colors.grey[200],
               height: 300,
-              padding: EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 children: [
-                  Text(
+                  const Text(
                     'Cart',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
@@ -202,12 +245,12 @@ class POSHomePageState extends State<POSHomePage> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               IconButton(
-                                icon: Icon(Icons.remove),
+                                icon: const Icon(Icons.remove),
                                 onPressed: () => removeFromCart(product),
                               ),
                               Text(quantity.toString()),
                               IconButton(
-                                icon: Icon(Icons.add),
+                                icon: const Icon(Icons.add),
                                 onPressed: () => addToCart(product),
                               ),
                             ],
@@ -216,21 +259,21 @@ class POSHomePageState extends State<POSHomePage> {
                       }).toList(),
                     ),
                   ),
-                  Divider(),
+                  const Divider(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'Total:',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text('KES ${total.toStringAsFixed(2)}'),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   ElevatedButton(
                     onPressed: checkout,
-                    child: Text('Checkout'),
+                    child: const Text('Checkout'),
                   ),
                 ],
               ),

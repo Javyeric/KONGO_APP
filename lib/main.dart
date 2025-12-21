@@ -1,11 +1,18 @@
-import 'package:flutter/material.dart';
-import 'pos_home.dart';
+// ignore_for_file: library_private_types_in_public_api
 
-void main() {
-  runApp(MyApp());
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'pos_home.dart'; // Import your POSHomePage
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -15,12 +22,14 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: POSHomeWrapper(),
+      home: const POSHomeWrapper(),
     );
   }
 }
 
 class POSHomeWrapper extends StatefulWidget {
+  const POSHomeWrapper({super.key});
+
   @override
   _POSHomeWrapperState createState() => _POSHomeWrapperState();
 }
@@ -29,7 +38,7 @@ class _POSHomeWrapperState extends State<POSHomeWrapper> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    POSHomePage(),
+    const POSHomePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -46,19 +55,27 @@ class _POSHomeWrapperState extends State<POSHomeWrapper> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: Colors.deepPurple),
+              decoration: const BoxDecoration(color: Colors.deepPurple),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
-                  CircleAvatar(radius: 30, backgroundColor: Colors.white),
-                  SizedBox(height: 10),
-                  Text('Welcome, User', style: TextStyle(color: Colors.white, fontSize: 18)),
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.local_drink, size: 50, color: Colors.deepPurple),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Welcome, Staff',
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
             ),
             ListTile(
-              leading: Icon(Icons.dashboard),
-              title: Text('Dashboard'),
+              leading: const Icon(Icons.dashboard),
+              title: const Text('Dashboard'),
               onTap: () {
                 Navigator.pop(context);
                 _onItemTapped(0);
@@ -68,12 +85,11 @@ class _POSHomeWrapperState extends State<POSHomeWrapper> {
         ),
       ),
       appBar: AppBar(
-        title: Text('Drink POS'),
+        title: const Text('Drink POS'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
       body: _screens[_selectedIndex],
-     
     );
   }
 }
