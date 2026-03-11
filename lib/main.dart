@@ -1,12 +1,9 @@
 // ignore_for_file: library_private_types_in_public_api
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'pos_home.dart'; // Import your POSHomePage
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+void main() {
   runApp(const MyApp());
 }
 
@@ -63,12 +60,16 @@ class _POSHomeWrapperState extends State<POSHomeWrapper> {
                   CircleAvatar(
                     radius: 40,
                     backgroundColor: Colors.white,
-                    child: Icon(Icons.local_drink, size: 50, color: Colors.deepPurple),
+                    child: Icon(Icons.local_drink,
+                        size: 50, color: Colors.deepPurple),
                   ),
                   SizedBox(height: 16),
                   Text(
                     'Welcome, Staff',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

@@ -1,42 +1,51 @@
-// ignore_for_file: library_private_types_in_public_api
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:kongo/utils/receipt_generator.dart';
-import 'package:kongo/models/product.dart';
-import 'package:kongo/screens/add_product_screen.dart';
+import '../products/products.dart';
+import '../models/product.dart';
 
 class POSHomePage extends StatefulWidget {
   const POSHomePage({super.key});
 
   @override
-  _POSHomePageState createState() => _POSHomePageState();
+  State<POSHomePage> createState() => _POSHomePageState();
 }
 
 class _POSHomePageState extends State<POSHomePage> {
-  String selectedCategory = 'All';
-  String selectedType = 'All';
-  Map<Product, int> cart = {};
-  String searchQuery = '';
-  bool showCart = true;
+  String? selectedCategory;
+  String? selectedType;
 
-  List<Product> filteredProducts(List<Product> allProducts) {
-    return allProducts.where((product) {
-      final matchesCategory = selectedCategory == 'All' || product.category == selectedCategory;
-      final matchesType = selectedType == 'All' || product.type == selectedType;
-      final matchesSearch = product.name.toLowerCase().contains(searchQuery.toLowerCase());
+  final Map<Product, int> cart = {};
+
+  // Search
+  bool showSearch = false;
+  String searchQuery = '';
+
+  List<String> get categories => products.map((p) => p.category).toSet().toList();
+
+  List<String> get types {
+    if (selectedCategory != null) {
+      return products
+          .where((p) => p.category == selectedCategory)
+          .map((p) => p.type)
+          .toSet()
+          .toList();
+    } else {
+      return products.map((p) => p.type).toSet().toList();
+    }
+  }
+
+  List<Product> get filteredProducts {
+    return products.where((p) {
+      final matchesCategory = selectedCategory == null || p.category == selectedCategory;
+      final matchesType = selectedType == null || p.type == selectedType;
+      final matchesSearch =
+          searchQuery.isEmpty || p.name.toLowerCase().contains(searchQuery.toLowerCase());
       return matchesCategory && matchesType && matchesSearch;
     }).toList();
   }
 
   void addToCart(Product product) {
     setState(() {
-      if (cart.containsKey(product)) {
-        cart[product] = cart[product]! + 1;
-      } else {
-        cart[product] = 1;
-      }
+      cart.update(product, (value) => value + 1, ifAbsent: () => 1);
     });
   }
 
@@ -52,27 +61,55 @@ class _POSHomePageState extends State<POSHomePage> {
     });
   }
 
-  double get total {
-    return cart.entries
-        .map((entry) => entry.key.price * entry.value)
-        .fold(0.0, (previousSum, element) => previousSum + element);
-  }
+  double get totalPrice =>
+      cart.entries.fold(0, (sum, e) => sum + e.key.price * e.value);
 
-  void checkout() async {
-    final now = DateTime.now();
-    final formattedDate = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
-
-    await ReceiptGenerator.generateReceipt(
-      cartItems: cart,
-      total: total,
-      date: formattedDate,
+  void showCheckoutDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Checkout'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: cart.entries.map((entry) {
+                    return ListTile(
+                      title: Text(entry.key.name),
+                      subtitle: Text('Qty: ${entry.value}'),
+                      trailing: Text('KES ${entry.key.price * entry.value}'),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const Divider(),
+              Text('Total: KES $totalPrice',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  cart.clear();
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Confirm')),
+        ],
+      ),
     );
-
-    if (!mounted) return;
-    setState(() {
-      cart.clear();
-    });
   }
+
+  bool isCartMinimized = true;
 
   @override
   Widget build(BuildContext context) {
@@ -80,238 +117,207 @@ class _POSHomePageState extends State<POSHomePage> {
       appBar: AppBar(
         title: const Text('POS Home'),
         actions: [
-          IconButton(icon: const Icon(Icons.receipt_long), onPressed: checkout),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
-              decoration: InputDecoration(
-                hintText: 'Search products...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-            ),
+          IconButton(
+            icon: Icon(showSearch ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                showSearch = !showSearch;
+                if (!showSearch) searchQuery = '';
+              });
+            },
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductScreen()),
-          );
-        },
-        tooltip: 'Add Product',
-        child: const Icon(Icons.add),
+        ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+          // SEARCH BAR
+          if (showSearch)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Search product...',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value;
+                  });
+                },
+              ),
+            ),
+
+          // CATEGORY CHIPS
+          SizedBox(
+            height: 50,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               children: [
-                categoryChip('All'),
-                categoryChip('Soft Drink'),
-                categoryChip('Liquor'),
-                categoryChip('Essentials'),
+                ChoiceChip(
+                  label: const Text('All Categories'),
+                  selected: selectedCategory == null,
+                  onSelected: (_) {
+                    setState(() {
+                      selectedCategory = null;
+                      selectedType = null;
+                    });
+                  },
+                ),
+                const SizedBox(width: 5),
+                ...categories.map(
+                  (cat) => Padding(
+                    padding: const EdgeInsets.only(right: 5),
+                    child: ChoiceChip(
+                      label: Text(cat),
+                      selected: selectedCategory == cat,
+                      onSelected: (_) {
+                        setState(() {
+                          selectedCategory = cat;
+                          selectedType = null;
+                        });
+                      },
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          if (selectedCategory == 'Liquor')
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
+
+          // TYPE CHIPS
+          if (selectedCategory != null)
+            SizedBox(
+              height: 50,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 children: [
-                  liquorTypeChip('All'),
-                  liquorTypeChip('Spirit'),
-                  liquorTypeChip('Whiskey'),
-                  liquorTypeChip('Gin'),
-                  liquorTypeChip('Vodka'),
-                  liquorTypeChip('Beer'),
+                  ChoiceChip(
+                    label: const Text('All Types'),
+                    selected: selectedType == null,
+                    onSelected: (_) {
+                      setState(() {
+                        selectedType = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 5),
+                  ...types.map(
+                    (type) => Padding(
+                      padding: const EdgeInsets.only(right: 5),
+                      child: ChoiceChip(
+                        label: Text(type),
+                        selected: selectedType == type,
+                        onSelected: (_) {
+                          setState(() {
+                            selectedType = type;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
+
+          const Divider(),
+
+          // PRODUCT GRID
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('products').snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No products found. Add some in Firestore!'));
-                }
-
-                final allProducts = snapshot.data!.docs.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  return Product.fromJson(data);
-                }).toList();
-
-                final filtered = filteredProducts(allProducts);
-
-                return GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: filtered.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemBuilder: (context, index) {
-                    final product = filtered[index];
-                    return Card(
-                      elevation: 4,
-                      child: InkWell(
-                        onTap: () => addToCart(product),
+            child: GridView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: filteredProducts.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, childAspectRatio: 0.7, crossAxisSpacing: 8, mainAxisSpacing: 8),
+              itemBuilder: (context, index) {
+                final product = filteredProducts[index];
+                return Card(
+                  elevation: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: product.image != null
+                            ? Image.asset(product.image!, fit: BoxFit.cover)
+                            : const Icon(Icons.image_not_supported, size: 50),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(6.0),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (product.image != null)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  product.image!,
-                                  height: 80,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(Icons.broken_image, size: 80),
+                            Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text('${product.size} | KES ${product.price}'),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle, color: Colors.red),
+                                  onPressed: () => removeFromCart(product),
                                 ),
-                              )
-                            else
-                              const Icon(Icons.image_not_supported, size: 80),
-                            const SizedBox(height: 8),
-                            Text(product.name, textAlign: TextAlign.center),
-                            Text(product.size),
-                            Text('KES ${product.price.toStringAsFixed(0)}'),
+                                Text(cart[product]?.toString() ?? '0'),
+                                IconButton(
+                                  icon: const Icon(Icons.add_circle, color: Colors.green),
+                                  onPressed: () => addToCart(product),
+                                ),
+                              ],
+                            )
                           ],
                         ),
                       ),
-                    );
-                  },
+                    ],
+                  ),
                 );
               },
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: TextButton.icon(
-              onPressed: () {
+
+          // CART BAR
+          if (cart.isNotEmpty)
+            GestureDetector(
+              onTap: () {
                 setState(() {
-                  showCart = !showCart;
+                  isCartMinimized = !isCartMinimized;
                 });
               },
-              icon: Icon(showCart ? Icons.expand_more : Icons.expand_less),
-              label: Text(showCart ? 'Minimize Cart' : 'Expand Cart'),
-            ),
-          ),
-          if (showCart)
-            Container(
-              color: Colors.grey[200],
-              height: 300,
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                children: [
-                  const Text(
-                    'Cart',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      children: cart.entries.map((entry) {
-                        final product = entry.key;
-                        final quantity = entry.value;
-                        return ListTile(
-                          title: Text('${product.name} (${product.size})'),
-                          subtitle: Text(
-                            'KES ${(product.price * quantity).toStringAsFixed(2)}',
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.remove),
-                                onPressed: () => removeFromCart(product),
-                              ),
-                              Text(quantity.toString()),
-                              IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: () => addToCart(product),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                color: Colors.blueGrey[800],
+                height: isCartMinimized ? 50 : 200,
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Cart: ${cart.length} items',
+                            style: const TextStyle(color: Colors.white)),
+                        ElevatedButton(
+                            onPressed: showCheckoutDialog,
+                            child: const Text('Checkout')),
+                      ],
                     ),
-                  ),
-                  const Divider(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Total:',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    if (!isCartMinimized)
+                      Expanded(
+                        child: ListView(
+                          children: cart.entries.map((entry) {
+                            return ListTile(
+                              title: Text(entry.key.name, style: const TextStyle(color: Colors.white)),
+                              subtitle: Text('Qty: ${entry.value}', style: const TextStyle(color: Colors.white70)),
+                              trailing: Text('KES ${entry.key.price * entry.value}', style: const TextStyle(color: Colors.white)),
+                            );
+                          }).toList(),
+                        ),
                       ),
-                      Text('KES ${total.toStringAsFixed(2)}'),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: checkout,
-                    child: const Text('Checkout'),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget categoryChip(String category) {
-    final isSelected = selectedCategory == category;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: ChoiceChip(
-        label: Text(category),
-        selected: isSelected,
-        onSelected: (bool selected) {
-          setState(() {
-            selectedCategory = selected ? category : 'All';
-            selectedType = 'All';
-          });
-        },
-      ),
-    );
-  }
-
-  Widget liquorTypeChip(String type) {
-    final isSelected = selectedType == type;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: ChoiceChip(
-        label: Text(type),
-        selected: isSelected,
-        onSelected: (bool selected) {
-          setState(() {
-            selectedType = selected ? type : 'All';
-          });
-        },
       ),
     );
   }
